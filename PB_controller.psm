@@ -1,0 +1,1366 @@
+;================================================================
+; Port address definitions...
+;================================================================
+
+CONSTANT state_to_verilog , 00    ; sends state assignment to verilog
+CONSTANT slot_num         , 01    ; user's selected slot number
+CONSTANT uart_data_rx     , 02    ; UART receive read port
+CONSTANT uart_data_tx     , 03    ; UART transmit write port
+CONSTANT data_present     , 04    ; UART stat read port, lsb
+CONSTANT buffer_full      , 05    ; UART stat read port, lsb
+CONSTANT done             , 06    ; tells when action is complete
+CONSTANT pause		  , 07	  ; tells when pause occurs
+
+;================================================================
+; Useful constant declarations...
+;================================================================
+
+CONSTANT ascii_LF         , 0A    ; ascii code (line feed)
+CONSTANT ascii_CR         , 0D    ; ascii code (carriage return)
+CONSTANT ascii_SPACE      , 20    ; ascii code
+CONSTANT ascii_COMMA      , 2C    ; ascii code
+CONSTANT ascii_PERIOD     , 2E    ; ascii code
+CONSTANT ascii_NUMSIGN    , 23    ; ascii code
+
+CONSTANT ascii_0          , 30    ; ascii code
+CONSTANT ascii_1          , 31    ; ascii code
+CONSTANT ascii_2          , 32    ; ascii code
+CONSTANT ascii_3          , 33    ; ascii code
+CONSTANT ascii_4          , 34    ; ascii code
+CONSTANT ascii_5          , 35    ; ascii code
+CONSTANT ascii_6          , 36    ; ascii code
+CONSTANT ascii_7          , 37    ; ascii code
+CONSTANT ascii_8          , 38    ; ascii code
+CONSTANT ascii_9          , 39    ; ascii code
+CONSTANT ascii_COLON      , 3A    ; ascii code
+CONSTANT ascii_QUESTION   , 3F    ; ascii code
+
+CONSTANT ascii_A          , 41    ; ascii code
+CONSTANT ascii_B          , 42    ; ascii code
+CONSTANT ascii_C          , 43    ; ascii code
+CONSTANT ascii_D          , 44    ; ascii code
+CONSTANT ascii_E          , 45    ; ascii code
+CONSTANT ascii_F          , 46    ; ascii code
+CONSTANT ascii_G          , 47    ; ascii code
+CONSTANT ascii_H          , 48    ; ascii code
+CONSTANT ascii_I          , 49    ; ascii code
+CONSTANT ascii_J          , 4A    ; ascii code
+CONSTANT ascii_K          , 4B    ; ascii code
+CONSTANT ascii_L          , 4C    ; ascii code
+CONSTANT ascii_M          , 4D    ; ascii code
+CONSTANT ascii_N          , 4E    ; ascii code
+CONSTANT ascii_O          , 4F    ; ascii code
+
+CONSTANT ascii_P          , 50    ; ascii code
+CONSTANT ascii_Q          , 51    ; ascii code
+CONSTANT ascii_R          , 52    ; ascii code
+CONSTANT ascii_S          , 53    ; ascii code
+CONSTANT ascii_T          , 54    ; ascii code
+CONSTANT ascii_U          , 55    ; ascii code
+CONSTANT ascii_V          , 56    ; ascii code
+CONSTANT ascii_W          , 57    ; ascii code
+CONSTANT ascii_X          , 58    ; ascii code
+CONSTANT ascii_Y          , 59    ; ascii code
+CONSTANT ascii_Z          , 5A    ; ascii code
+CONSTANT ascii_LBKT       , 5B    ; ascii code
+CONSTANT ascii_RBKT       , 5D    ; ascii code
+
+CONSTANT ascii_a          , 61    ; ascii code
+CONSTANT ascii_b          , 62    ; ascii code
+CONSTANT ascii_c          , 63    ; ascii code
+CONSTANT ascii_d          , 64    ; ascii code
+CONSTANT ascii_e          , 65    ; ascii code
+CONSTANT ascii_f          , 66    ; ascii code
+CONSTANT ascii_g          , 67    ; ascii code
+CONSTANT ascii_h          , 68    ; ascii code
+CONSTANT ascii_i          , 69    ; ascii code
+CONSTANT ascii_j          , 6A    ; ascii code
+CONSTANT ascii_k          , 6B    ; ascii code
+CONSTANT ascii_l          , 6C    ; ascii code
+CONSTANT ascii_m          , 6D    ; ascii code
+CONSTANT ascii_n          , 6E    ; ascii code
+CONSTANT ascii_o          , 6F    ; ascii code
+
+CONSTANT ascii_p          , 70    ; ascii code
+CONSTANT ascii_q          , 71    ; ascii code
+CONSTANT ascii_r          , 72    ; ascii code
+CONSTANT ascii_s          , 73    ; ascii code
+CONSTANT ascii_t          , 74    ; ascii code
+CONSTANT ascii_u          , 75    ; ascii code
+CONSTANT ascii_v          , 76    ; ascii code
+CONSTANT ascii_w          , 77    ; ascii code
+CONSTANT ascii_x          , 78    ; ascii code
+CONSTANT ascii_y          , 79    ; ascii code
+CONSTANT ascii_z          , 7A    ; ascii code
+
+;================================================================
+; Main Controller Code
+;================================================================
+
+startup:
+    XOR s0, s0   ; sets s0 = 0
+    STORE s0, 00 ; record_flag
+    STORE s0, 01 ; play_flag
+    STORE s0, 02 ; delete_flag
+    STORE s0, 03 ; slot_1_full
+    STORE s0, 04 ; slot_2_full
+    STORE s0, 05 ; slot_3_full
+	STORE s0, 06 ; slot_4_full
+	STORE s0, 07 ; slot_5_full
+	STORE s0, 08 ; selected_slot in ascii
+	STORE s0, 09 ; selected_slot numerical value
+	STORE s0, 0A ; base_address + offset for slot_#_full flag
+	STORE s0, 0B ; pause_play flag
+	;STORE s0, 0C ; 
+	;STORE s0, 0D ; 
+	;STORE s0, 0E ; 
+	;STORE s0, 0F ; 
+	STORE s0, 10 ; state_assignment = IDLE at start
+
+    FETCH s0, 10                    ; loads IDLE into s0
+    OUTPUT s0, state_to_verilog     ; sends IDLE to verilog
+
+print_home_screen:
+    LOAD s0, ascii_S    ; "Select an operation:"
+    CALL send_to_uart
+    LOAD s0, ascii_e
+    CALL send_to_uart
+    LOAD s0, ascii_l
+    CALL send_to_uart
+    LOAD s0, ascii_e
+    CALL send_to_uart
+    LOAD s0, ascii_c
+    CALL send_to_uart
+    LOAD s0, ascii_t
+    CALL send_to_uart
+    LOAD s0, ascii_SPACE
+    CALL send_to_uart
+    LOAD s0, ascii_a
+    CALL send_to_uart
+    LOAD s0, ascii_n
+    CALL send_to_uart
+    LOAD s0, ascii_SPACE
+    CALL send_to_uart
+    LOAD s0, ascii_o
+    CALL send_to_uart
+    LOAD s0, ascii_p
+    CALL send_to_uart
+    LOAD s0, ascii_e
+    CALL send_to_uart
+    LOAD s0, ascii_r
+    CALL send_to_uart
+    LOAD s0, ascii_a
+    CALL send_to_uart
+    LOAD s0, ascii_t
+    CALL send_to_uart
+    LOAD s0, ascii_i
+    CALL send_to_uart
+    LOAD s0, ascii_o
+    CALL send_to_uart
+    LOAD s0, ascii_n
+    CALL send_to_uart
+    LOAD s0, ascii_COLON
+    CALL send_to_uart
+    LOAD s0, ascii_CR   ; carriage return = end of line
+    CALL send_to_uart
+    LOAD s0, ascii_LF   ; line feed = new line
+    CALL send_to_uart
+    
+    LOAD s0, ascii_LBKT ; "[1] Record"
+    CALL send_to_uart
+    LOAD s0, ascii_1
+    CALL send_to_uart
+    LOAD s0, ascii_RBKT
+    CALL send_to_uart
+    LOAD s0, ascii_SPACE
+    CALL send_to_uart
+    LOAD s0, ascii_R
+    CALL send_to_uart
+    LOAD s0, ascii_e
+    CALL send_to_uart
+    LOAD s0, ascii_c
+    CALL send_to_uart
+    LOAD s0, ascii_o
+    CALL send_to_uart
+    LOAD s0, ascii_r
+    CALL send_to_uart
+    LOAD s0, ascii_d
+    CALL send_to_uart
+    LOAD s0, ascii_CR   ; carriage return = end of line
+    CALL send_to_uart
+    LOAD s0, ascii_LF   ; line feed = new line
+    CALL send_to_uart
+
+    LOAD s0, ascii_LBKT ; "[2] Play"
+    CALL send_to_uart
+    LOAD s0, ascii_2
+    CALL send_to_uart
+    LOAD s0, ascii_RBKT
+    CALL send_to_uart
+    LOAD s0, ascii_SPACE
+    CALL send_to_uart
+    LOAD s0, ascii_P
+    CALL send_to_uart
+    LOAD s0, ascii_l
+    CALL send_to_uart
+    LOAD s0, ascii_a
+    CALL send_to_uart
+    LOAD s0, ascii_y
+    CALL send_to_uart
+    LOAD s0, ascii_CR   ; carriage return = end of line
+    CALL send_to_uart
+    LOAD s0, ascii_LF   ; line feed = new line
+    CALL send_to_uart
+    
+    LOAD s0, ascii_LBKT ; "[3] Delete"
+    CALL send_to_uart
+    LOAD s0, ascii_3
+    CALL send_to_uart
+    LOAD s0, ascii_RBKT
+    CALL send_to_uart
+    LOAD s0, ascii_SPACE
+    CALL send_to_uart
+    LOAD s0, ascii_D
+    CALL send_to_uart
+    LOAD s0, ascii_e
+    CALL send_to_uart
+    LOAD s0, ascii_l
+    CALL send_to_uart
+    LOAD s0, ascii_e
+    CALL send_to_uart
+    LOAD s0, ascii_t
+    CALL send_to_uart
+    LOAD s0, ascii_e
+    CALL send_to_uart
+    LOAD s0, ascii_CR   ; carriage return = end of line
+    CALL send_to_uart
+    LOAD s0, ascii_LF   ; line feed = new line
+    CALL send_to_uart
+
+select_operation:
+    CALL read_from_uart
+    COMPARE s0, 31             ; if 1 (31 in ascii), set record flag
+    JUMP Z, set_record_flag
+    COMPARE s0, 32             ; if 2 (32), set play flag
+    JUMP Z, set_play_flag
+    COMPARE s0, 33             ; if 3 (33), set delete flag
+    JUMP Z, set_delete_flag
+    CALL invalid_operation
+    JUMP print_home_screen
+
+set_record_flag:
+    LOAD s0, 01     ; load 1 in s0
+    STORE s0, 00    ; set record flag to 1
+    JUMP record_selected
+
+set_play_flag:
+    LOAD s0, 01     ; load 1 in s0
+    STORE s0, 01    ; set play flag to 1
+    JUMP play_selected
+
+set_delete_flag:
+    LOAD s0, 01     ; load 1 in s0
+    STORE s0, 02    ; set delete flag to 1
+    JUMP delete_selected
+
+record_selected:
+    LOAD s0, ascii_R ; "Record selected."
+	CALL send_to_uart
+	LOAD s0, ascii_e
+	CALL send_to_uart
+	LOAD s0, ascii_c
+    CALL send_to_uart
+    LOAD s0, ascii_o
+	CALL send_to_uart
+	LOAD s0, ascii_r
+	CALL send_to_uart
+	LOAD s0, ascii_d
+    CALL send_to_uart
+    LOAD s0, ascii_SPACE
+    CALL send_to_uart
+    LOAD s0, ascii_s
+	CALL send_to_uart
+	LOAD s0, ascii_e
+	CALL send_to_uart
+	LOAD s0, ascii_l
+    CALL send_to_uart
+    LOAD s0, ascii_e
+	CALL send_to_uart
+	LOAD s0, ascii_c
+	CALL send_to_uart
+	LOAD s0, ascii_t
+    CALL send_to_uart
+	LOAD s0, ascii_e
+    CALL send_to_uart
+	LOAD s0, ascii_d
+    CALL send_to_uart
+    LOAD s0, ascii_PERIOD
+    CALL send_to_uart
+    LOAD s0, ascii_CR   ; carriage return = end of line
+    CALL send_to_uart
+    LOAD s0, ascii_LF   ; line feed = new line
+    CALL send_to_uart
+    JUMP print_select_slot
+
+play_selected:
+    LOAD s0, ascii_P ; "Play selected."
+	CALL send_to_uart
+	LOAD s0, ascii_l
+	CALL send_to_uart
+	LOAD s0, ascii_a
+    CALL send_to_uart
+    LOAD s0, ascii_y
+	CALL send_to_uart
+    LOAD s0, ascii_SPACE
+    CALL send_to_uart
+    LOAD s0, ascii_s
+	CALL send_to_uart
+	LOAD s0, ascii_e
+	CALL send_to_uart
+	LOAD s0, ascii_l
+    CALL send_to_uart
+    LOAD s0, ascii_e
+	CALL send_to_uart
+	LOAD s0, ascii_c
+	CALL send_to_uart
+	LOAD s0, ascii_t
+    CALL send_to_uart
+	LOAD s0, ascii_e
+    CALL send_to_uart
+	LOAD s0, ascii_d
+    CALL send_to_uart
+    LOAD s0, ascii_PERIOD
+    CALL send_to_uart
+    LOAD s0, ascii_CR   ; carriage return = end of line
+    CALL send_to_uart
+    LOAD s0, ascii_LF   ; line feed = new line
+    CALL send_to_uart
+    JUMP print_select_slot
+
+delete_selected:
+    LOAD s0, ascii_D ; "Delete selected."
+	CALL send_to_uart
+	LOAD s0, ascii_e
+	CALL send_to_uart
+	LOAD s0, ascii_l
+    CALL send_to_uart
+    LOAD s0, ascii_e
+	CALL send_to_uart
+	LOAD s0, ascii_t
+	CALL send_to_uart
+	LOAD s0, ascii_e
+    CALL send_to_uart
+    LOAD s0, ascii_SPACE
+    CALL send_to_uart
+    LOAD s0, ascii_s
+	CALL send_to_uart
+	LOAD s0, ascii_e
+	CALL send_to_uart
+	LOAD s0, ascii_l
+    CALL send_to_uart
+    LOAD s0, ascii_e
+	CALL send_to_uart
+	LOAD s0, ascii_c
+	CALL send_to_uart
+	LOAD s0, ascii_t
+    CALL send_to_uart
+	LOAD s0, ascii_e
+    CALL send_to_uart
+	LOAD s0, ascii_d
+    CALL send_to_uart
+    LOAD s0, ascii_PERIOD
+    CALL send_to_uart
+    LOAD s0, ascii_CR   ; carriage return = end of line
+    CALL send_to_uart
+    LOAD s0, ascii_LF   ; line feed = new line
+    CALL send_to_uart
+    JUMP print_select_slot
+
+
+print_select_slot:
+    LOAD s0, ascii_S    ; "Select a slot"
+	CALL send_to_uart
+	LOAD s0, ascii_e
+	CALL send_to_uart
+	LOAD s0, ascii_l
+	CALL send_to_uart
+	LOAD s0, ascii_e
+	CALL send_to_uart
+	LOAD s0, ascii_c
+	CALL send_to_uart
+	LOAD s0, ascii_t
+	CALL send_to_uart
+	LOAD s0, ascii_SPACE
+	CALL send_to_uart
+	LOAD s0, ascii_a
+	CALL send_to_uart
+	LOAD s0, ascii_SPACE
+	CALL send_to_uart
+	LOAD s0, ascii_s
+	CALL send_to_uart
+	LOAD s0, ascii_l
+	CALL send_to_uart
+	LOAD s0, ascii_o
+	CALL send_to_uart
+	LOAD s0, ascii_t
+	CALL send_to_uart
+	LOAD s0, ascii_COLON
+	CALL send_to_uart
+    LOAD s0, ascii_CR   ; carriage return = end of line
+    CALL send_to_uart
+    LOAD s0, ascii_LF   ; line feed = new line
+    CALL send_to_uart
+
+	LOAD s0, ascii_LBKT ; "[1]"
+	CALL send_to_uart
+	LOAD s0, ascii_1
+	CALL send_to_uart
+	LOAD s0, ascii_RBKT
+	CALL send_to_uart
+    LOAD s0, ascii_CR   ; carriage return = end of line
+    CALL send_to_uart
+    LOAD s0, ascii_LF   ; line feed = new line
+    CALL send_to_uart
+
+	LOAD s0, ascii_LBKT ; "[2]"
+	CALL send_to_uart
+	LOAD s0, ascii_2
+	CALL send_to_uart
+	LOAD s0, ascii_RBKT
+	CALL send_to_uart
+    LOAD s0, ascii_CR   ; carriage return = end of line
+    CALL send_to_uart
+    LOAD s0, ascii_LF   ; line feed = new line
+    CALL send_to_uart
+
+	LOAD s0, ascii_LBKT ; "[3]"
+	CALL send_to_uart
+	LOAD s0, ascii_3
+	CALL send_to_uart
+	LOAD s0, ascii_RBKT
+	CALL send_to_uart
+    LOAD s0, ascii_CR   ; carriage return = end of line
+    CALL send_to_uart
+    LOAD s0, ascii_LF   ; line feed = new line
+    CALL send_to_uart
+
+	LOAD s0, ascii_LBKT ; "[4]"
+	CALL send_to_uart
+	LOAD s0, ascii_4
+	CALL send_to_uart
+	LOAD s0, ascii_RBKT
+	CALL send_to_uart
+    LOAD s0, ascii_CR   ; carriage return = end of line
+    CALL send_to_uart
+    LOAD s0, ascii_LF   ; line feed = new line
+    CALL send_to_uart
+
+	LOAD s0, ascii_LBKT ; "[5]"
+	CALL send_to_uart
+	LOAD s0, ascii_5
+	CALL send_to_uart
+	LOAD s0, ascii_RBKT
+	CALL send_to_uart
+    LOAD s0, ascii_CR   ; carriage return = end of line
+    CALL send_to_uart
+    LOAD s0, ascii_LF   ; line feed = new line
+    CALL send_to_uart
+
+get_selected_slot:
+    CALL read_from_uart
+    COMPARE s0, 31             ; if 1 (31 in ascii)
+    JUMP Z, store_selected_slot
+    COMPARE s0, 32             ; if 2 (32)
+    JUMP Z, store_selected_slot
+    COMPARE s0, 33             ; if 3 (33)
+    JUMP Z, store_selected_slot
+    COMPARE s0, 34             ; if 4 (34)
+    JUMP Z, store_selected_slot
+    COMPARE s0, 35             ; if 5 (35)
+    JUMP Z, store_selected_slot
+    CALL invalid_slot
+    JUMP print_select_slot
+
+store_selected_slot:
+    STORE s0, 08    ; store slot in selected_slot variable
+    JUMP print_slot
+    ;JUMP flag_routing
+
+print_slot:
+    LOAD s0, ascii_S ;"Slot #X chosen."
+	CALL send_to_uart
+	LOAD s0, ascii_l
+	CALL send_to_uart
+	LOAD s0, ascii_o
+	CALL send_to_uart
+	LOAD s0, ascii_t
+    CALL send_to_uart
+    LOAD s0, ascii_SPACE
+    CALL send_to_uart
+    LOAD s0, ascii_NUMSIGN
+    CALL send_to_uart
+    FETCH s0, 08
+    CALL send_to_uart
+    LOAD s0, ascii_SPACE
+    CALL send_to_uart
+    LOAD s0, ascii_S
+	CALL send_to_uart
+	LOAD s0, ascii_e
+	CALL send_to_uart
+	LOAD s0, ascii_l
+    CALL send_to_uart
+    LOAD s0, ascii_e
+	CALL send_to_uart
+	LOAD s0, ascii_c
+	CALL send_to_uart
+	LOAD s0, ascii_t
+    CALL send_to_uart
+	LOAD s0, ascii_e
+    CALL send_to_uart
+	LOAD s0, ascii_d
+    CALL send_to_uart
+    LOAD s0, ascii_PERIOD
+    CALL send_to_uart
+    LOAD s0, ascii_CR   ; carriage return = end of line
+    CALL send_to_uart
+    LOAD s0, ascii_LF   ; line feed = new line
+    CALL send_to_uart
+    JUMP flag_routing
+
+flag_routing:
+    FETCH s0, 08        ; S0 = ascii # for slot
+    SUB s0, 30          ; gives slot number
+    STORE s0, 09        ; stores selected_slot (numerical)
+    ADD s0, 02          ; base address + offset to get flag
+    STORE s0, 0A        ; stores base address + offset for slot_#_full flag
+    FETCH s1, (s0)      ; s1 = slot_#_full flag
+    COMPARE s1, 01
+    JUMP Z, full_flag_routing
+    JUMP empty_flag_routing
+
+full_flag_routing:
+    FETCH s2, 02            ; s2 = delete_flag
+    COMPARE s2, 01
+    JUMP Z, delete_slot     ; if delete, delete_slot
+    FETCH s2, 01            ; s2 = play_flag
+    COMPARE s2, 01
+    JUMP Z, assign_state    ; if play, go to play state assignment
+    FETCH s2, 00            ; s2 = record_flag
+    COMPARE s2, 01
+    JUMP Z, overwrite_slot  ; if rec, det. if overwrite
+    CALL invalid_combination
+    JUMP clear_variables
+
+empty_flag_routing:
+    FETCH s2, 02        ; s2 = delete_flag
+    COMPARE s2, 01
+    JUMP Z, empty_slot_handler ; if delete, nothing to delete
+    FETCH s2, 01        ; s2 = play_flag
+    COMPARE s2, 01
+    JUMP Z, empty_slot_handler ; if play, nothing to play
+    FETCH s2, 00        ; s2 = record_flag
+    COMPARE s2, 01
+    JUMP Z, assign_state ; if rec, det. if overwrite
+    CALL invalid_combination
+    JUMP clear_variables
+
+empty_slot_handler:
+    CALL empty_slot_error ; if delete/play, nothing to delete/play
+    JUMP clear_flag
+
+delete_slot:
+    CALL confirm_delete
+    CALL read_from_uart
+    COMPARE s0, 31      ; if yes
+    JUMP Z, deleting
+    COMPARE s0, 32      ; if no
+    JUMP Z, clear_variables
+    CALL invalid_combination ; if neither
+    JUMP clear_variables
+
+deleting:
+    LOAD s0, 00
+    FETCH s1, 0A   ; 0A = base address + offset of flag
+    STORE s0, (s1) ; stores 0 for slot_#_full flag to mark as empty
+    CALL delete_successful
+    JUMP clear_variables
+
+overwrite_slot:
+    CALL confirm_overwrite
+    CALL read_from_uart
+    COMPARE s0, 31      ; if yes
+    JUMP Z, overwriting
+    COMPARE s0, 32      ; if no
+    JUMP Z, clear_variables
+    CALL invalid_combination ; if neither
+    JUMP clear_variables
+
+overwriting:
+    LOAD s0, 00
+    FETCH s1, 0A   ; 0A = base address + offset of flag
+    STORE s0, (s1) ; stores 0 for slot_#_full flag to mark as empty
+    CALL overwrite_confirmed
+    JUMP assign_state
+
+clear_flag:
+    LOAD s0, 00     ; load 0 in s0
+    STORE s0, 00    ; set record_flag to 0
+    STORE s0, 01    ; set play_flag to 0
+    STORE s0, 02    ; set delete_flag to 0
+    STORE s0, 08    ; set current_slot to 0
+    JUMP print_home_screen
+
+assign_state:
+    FETCH s2, 01        ; s2 = play_flag
+    COMPARE s2, 01
+    JUMP Z, play_state  ; if play, set state to play
+    FETCH s2, 00        ; s2 = record_flag
+    COMPARE s2, 01
+    JUMP Z, record_state ; if rec, set state to record
+    CALL invalid_combination
+    JUMP clear_variables
+
+;========================
+; States
+;   00 = IDLE
+;   01 = PLAY
+;   02 = RECORD
+;========================
+
+play_state:
+    FETCH s0, 09                  ; loads slot_num (numerical)
+    OUTPUT s0, slot_num           ; sends slot num to verilog
+    LOAD s0, 01
+    STORE s0, 10                  ; loads PLAY into state_assignment
+    OUTPUT s0, state_to_verilog   ; sends PLAY to verilog
+    CALL playing
+    JUMP waiting_room_play
+
+record_state:
+    FETCH s0,  09                 ; loads slot_num (numerical)
+    OUTPUT s0, slot_num           ; sends slot num to verilog
+    LOAD s0, 02
+    STORE s0, 10                  ; loads RECORD into state_assignment
+    OUTPUT s0, state_to_verilog   ; sends RECORD to verilog
+    CALL recording
+    JUMP waiting_room_record
+
+waiting_room_record:
+    INPUT s0, done          		; inputs done from verilog
+    COMPARE s0, 00
+    JUMP Z, waiting_room_record         ; if not done, loop
+    JUMP finale          	        ; if done, finale
+
+waiting_room_play:
+    INPUT s0, done          ; inputs done from verilog
+    COMPARE s0, 00
+    JUMP Z, pause_check     ; if not done, check if paused
+    JUMP finale             ; if done, finale
+
+pause_check:
+    CALL read_from_uart_for_pause
+    COMPARE s0, 20		; 20 in ascii = space
+    JUMP NZ, waiting_room_play	; if not paused, back to waiting room loop
+    LOAD s0, 01
+    STORE s0, 0B		; raise pause flag
+    OUTPUT s0, 07		; output pause signal to FSM
+    CALL paused
+    JUMP rec_paused		; jump to pause to wait for resume
+
+rec_paused:
+    CALL read_from_uart
+    COMPARE s0, 20		; 20 in ascii = space
+    JUMP NZ, rec_paused		; if still paused, loop
+    LOAD s0, 00
+    STORE s0, 0B		; lower pause flag
+    OUTPUT s0, 07		; output un-pause signal to FSM
+    CALL playing
+    JUMP waiting_room_play	; jump to waiting room to continue playing
+
+finale:
+    LOAD s0, 00 
+    OUTPUT s0, state_to_verilog ; sets state to IDLE in verilog
+    FETCH s0, 10                ; load previous state
+    COMPARE s0, 01              ; if play
+    JUMP Z, clear_variables     ; jump to clear_variables
+    COMPARE s0, 02              ; if record
+    JUMP Z, record_finale       ; finalize record
+    CALL invalid_combination    ; else, invalid combination
+    JUMP clear_variables
+
+record_finale:
+    FETCH s0, 0A                ; get base address + offset of slot_#_full flag
+    LOAD s1, 01                 ; s1 = 01
+    STORE s1, (s0)              ; if record, set slot_#_full = 1
+    JUMP clear_variables        
+
+clear_variables:
+    LOAD s0, 00 
+	STORE s0, 09 ; selected_slot numerical value
+	STORE s0, 0A ; base_address + offset for slot_#_full flag
+	STORE s0, 10 ; state_assignment = IDLE at start
+    JUMP clear_flag
+
+;================================================================
+; Subroutines
+;================================================================
+
+send_to_uart:                   ; outputs value passed to UART
+    INPUT s1, buffer_full
+    COMPARE s1, 01
+    JUMP Z, send_to_uart    ; if buffer_full = 1, jumps to stall
+    OUTPUT s0, uart_data_tx     ; outputs value
+    RETURN
+
+read_from_uart:
+    INPUT s1, data_present     ; check if data_present for rx
+    COMPARE s1, 00
+    JUMP Z, read_from_uart   ; loop if no data available
+    INPUT s0, uart_data_rx     ; read from rx and store in s0             
+    RETURN
+
+read_from_uart_for_pause:
+    INPUT s1, data_present     ; check if data_present for rx
+    COMPARE s1, 00
+    RETURN Z   		       ; return if no data available
+    INPUT s0, uart_data_rx     ; read from rx and store in s0            
+    RETURN
+
+invalid_operation: 
+    LOAD s0, ascii_I    ; "Invalid Operation."
+    CALL send_to_uart
+    LOAD s0, ascii_n
+    CALL send_to_uart
+    LOAD s0, ascii_v
+    CALL send_to_uart
+    LOAD s0, ascii_a
+    CALL send_to_uart
+    LOAD s0, ascii_l
+    CALL send_to_uart
+    LOAD s0, ascii_i
+    CALL send_to_uart
+    LOAD s0, ascii_d
+    CALL send_to_uart
+    LOAD s0, ascii_SPACE
+    CALL send_to_uart
+    LOAD s0, ascii_O
+    CALL send_to_uart
+    LOAD s0, ascii_p
+    CALL send_to_uart
+    LOAD s0, ascii_e
+    CALL send_to_uart
+    LOAD s0, ascii_r
+    CALL send_to_uart
+    LOAD s0, ascii_a
+    CALL send_to_uart
+    LOAD s0, ascii_t
+    CALL send_to_uart
+    LOAD s0, ascii_i
+    CALL send_to_uart
+    LOAD s0, ascii_o
+    CALL send_to_uart
+    LOAD s0, ascii_n
+    CALL send_to_uart
+    LOAD s0, ascii_PERIOD
+    CALL send_to_uart
+    LOAD s0, ascii_CR   ; carriage return = end of line
+    CALL send_to_uart
+    LOAD s0, ascii_LF   ; line feed = new line
+    CALL send_to_uart
+    RETURN
+
+invalid_slot: 
+    LOAD s0, ascii_I    ; "Invalid Slot."
+    CALL send_to_uart
+    LOAD s0, ascii_n
+    CALL send_to_uart
+    LOAD s0, ascii_v
+    CALL send_to_uart
+    LOAD s0, ascii_a
+    CALL send_to_uart
+    LOAD s0, ascii_l
+    CALL send_to_uart
+    LOAD s0, ascii_i
+    CALL send_to_uart
+    LOAD s0, ascii_d
+    CALL send_to_uart
+    LOAD s0, ascii_SPACE
+    CALL send_to_uart
+    LOAD s0, ascii_S
+    CALL send_to_uart
+    LOAD s0, ascii_l
+    CALL send_to_uart
+    LOAD s0, ascii_o
+    CALL send_to_uart
+    LOAD s0, ascii_t
+    CALL send_to_uart
+    LOAD s0, ascii_PERIOD
+    CALL send_to_uart
+    LOAD s0, ascii_CR   ; carriage return = end of line
+    CALL send_to_uart
+    LOAD s0, ascii_LF   ; line feed = new line
+    CALL send_to_uart
+    RETURN
+
+empty_slot_error:
+    LOAD s0, ascii_E    ; "Error, empty slot. Invalid Operation."
+    CALL send_to_uart
+    LOAD s0, ascii_r
+    CALL send_to_uart
+    LOAD s0, ascii_r
+    CALL send_to_uart
+    LOAD s0, ascii_o
+    CALL send_to_uart
+    LOAD s0, ascii_r
+    CALL send_to_uart
+    LOAD s0, ascii_COMMA
+    CALL send_to_uart
+    LOAD s0, ascii_SPACE
+    CALL send_to_uart
+    LOAD s0, ascii_e
+    CALL send_to_uart
+    LOAD s0, ascii_m
+    CALL send_to_uart
+    LOAD s0, ascii_p
+    CALL send_to_uart
+    LOAD s0, ascii_t
+    CALL send_to_uart
+    LOAD s0, ascii_y
+    CALL send_to_uart
+    LOAD s0, ascii_SPACE
+    CALL send_to_uart
+    LOAD s0, ascii_s
+    CALL send_to_uart
+    LOAD s0, ascii_l
+    CALL send_to_uart
+    LOAD s0, ascii_o
+    CALL send_to_uart
+    LOAD s0, ascii_t
+    CALL send_to_uart
+    LOAD s0, ascii_PERIOD
+    CALL send_to_uart
+    LOAD s0, ascii_SPACE
+    CALL send_to_uart
+    LOAD s0, ascii_I
+    CALL send_to_uart
+    LOAD s0, ascii_n
+    CALL send_to_uart
+    LOAD s0, ascii_v
+    CALL send_to_uart
+    LOAD s0, ascii_a
+    CALL send_to_uart
+    LOAD s0, ascii_l
+    CALL send_to_uart
+    LOAD s0, ascii_i
+    CALL send_to_uart
+    LOAD s0, ascii_d
+    CALL send_to_uart
+    LOAD s0, ascii_SPACE
+    CALL send_to_uart
+    LOAD s0, ascii_O
+    CALL send_to_uart
+    LOAD s0, ascii_p
+    CALL send_to_uart
+    LOAD s0, ascii_e
+    CALL send_to_uart
+    LOAD s0, ascii_r
+    CALL send_to_uart
+    LOAD s0, ascii_a
+    CALL send_to_uart
+    LOAD s0, ascii_t
+    CALL send_to_uart
+    LOAD s0, ascii_i
+    CALL send_to_uart
+    LOAD s0, ascii_o
+    CALL send_to_uart
+    LOAD s0, ascii_n
+    CALL send_to_uart
+    LOAD s0, ascii_PERIOD
+    CALL send_to_uart
+    LOAD s0, ascii_CR   ; carriage return = end of line
+    CALL send_to_uart
+    LOAD s0, ascii_LF   ; line feed = new line
+    CALL send_to_uart
+    RETURN
+
+invalid_combination:
+    LOAD s0, ascii_E    ; "Error. Invalid Combination."
+    CALL send_to_uart
+    LOAD s0, ascii_r
+    CALL send_to_uart
+    LOAD s0, ascii_r
+    CALL send_to_uart
+    LOAD s0, ascii_o
+    CALL send_to_uart
+    LOAD s0, ascii_r
+    CALL send_to_uart
+    LOAD s0, ascii_PERIOD
+    CALL send_to_uart
+    LOAD s0, ascii_SPACE
+    CALL send_to_uart
+    LOAD s0, ascii_I
+    CALL send_to_uart
+    LOAD s0, ascii_n
+    CALL send_to_uart
+    LOAD s0, ascii_v
+    CALL send_to_uart
+    LOAD s0, ascii_a
+    CALL send_to_uart
+    LOAD s0, ascii_l
+    CALL send_to_uart
+    LOAD s0, ascii_i
+    CALL send_to_uart
+    LOAD s0, ascii_d
+    CALL send_to_uart
+    LOAD s0, ascii_SPACE
+    CALL send_to_uart
+    LOAD s0, ascii_C
+    CALL send_to_uart
+    LOAD s0, ascii_o
+    CALL send_to_uart
+    LOAD s0, ascii_m
+    CALL send_to_uart
+    LOAD s0, ascii_b
+    CALL send_to_uart
+    LOAD s0, ascii_i
+    CALL send_to_uart
+    LOAD s0, ascii_n
+    CALL send_to_uart
+    LOAD s0, ascii_a
+    CALL send_to_uart
+    LOAD s0, ascii_t
+    CALL send_to_uart
+    LOAD s0, ascii_i
+    CALL send_to_uart
+    LOAD s0, ascii_o
+    CALL send_to_uart
+    LOAD s0, ascii_n
+    CALL send_to_uart
+    LOAD s0, ascii_PERIOD
+    CALL send_to_uart
+    LOAD s0, ascii_CR   ; carriage return = end of line
+    CALL send_to_uart
+    LOAD s0, ascii_LF   ; line feed = new line
+    CALL send_to_uart
+    RETURN
+
+confirm_delete:
+    LOAD s0, ascii_W    ; "Would you like to delete this recording?"
+    CALL send_to_uart
+    LOAD s0, ascii_o
+    CALL send_to_uart
+    LOAD s0, ascii_u
+    CALL send_to_uart
+    LOAD s0, ascii_l
+    CALL send_to_uart
+    LOAD s0, ascii_d
+    CALL send_to_uart
+    LOAD s0, ascii_SPACE
+    CALL send_to_uart
+    LOAD s0, ascii_y
+    CALL send_to_uart
+    LOAD s0, ascii_o
+    CALL send_to_uart
+    LOAD s0, ascii_u
+    CALL send_to_uart
+    LOAD s0, ascii_SPACE
+    CALL send_to_uart
+    LOAD s0, ascii_l
+    CALL send_to_uart
+    LOAD s0, ascii_i
+    CALL send_to_uart
+    LOAD s0, ascii_k
+    CALL send_to_uart
+    LOAD s0, ascii_e
+    CALL send_to_uart
+    LOAD s0, ascii_SPACE
+    CALL send_to_uart
+    LOAD s0, ascii_t
+    CALL send_to_uart
+    LOAD s0, ascii_o
+    CALL send_to_uart
+    LOAD s0, ascii_SPACE
+    CALL send_to_uart
+    LOAD s0, ascii_d
+    CALL send_to_uart
+    LOAD s0, ascii_e
+    CALL send_to_uart
+    LOAD s0, ascii_l
+    CALL send_to_uart
+    LOAD s0, ascii_e
+    CALL send_to_uart
+    LOAD s0, ascii_t
+    CALL send_to_uart
+    LOAD s0, ascii_e
+    CALL send_to_uart
+    LOAD s0, ascii_SPACE
+    CALL send_to_uart
+    LOAD s0, ascii_t
+    CALL send_to_uart
+    LOAD s0, ascii_h
+    CALL send_to_uart
+    LOAD s0, ascii_i
+    CALL send_to_uart
+    LOAD s0, ascii_s
+    CALL send_to_uart
+    LOAD s0, ascii_SPACE
+    CALL send_to_uart
+    LOAD s0, ascii_r
+    CALL send_to_uart
+    LOAD s0, ascii_e
+    CALL send_to_uart
+    LOAD s0, ascii_c
+    CALL send_to_uart
+    LOAD s0, ascii_o
+    CALL send_to_uart
+    LOAD s0, ascii_r
+    CALL send_to_uart
+    LOAD s0, ascii_d
+    CALL send_to_uart
+    LOAD s0, ascii_i
+    CALL send_to_uart
+    LOAD s0, ascii_n
+    CALL send_to_uart
+    LOAD s0, ascii_g
+    CALL send_to_uart
+    LOAD s0, ascii_QUESTION
+    CALL send_to_uart
+    LOAD s0, ascii_CR   ; carriage return = end of line
+    CALL send_to_uart
+    LOAD s0, ascii_LF   ; line feed = new line
+    CALL send_to_uart
+
+    LOAD s0, ascii_LBKT ; "[1] Yes"
+	CALL send_to_uart
+	LOAD s0, ascii_1
+	CALL send_to_uart
+	LOAD s0, ascii_RBKT
+	CALL send_to_uart
+    LOAD s0, ascii_SPACE
+    CALL send_to_uart
+    LOAD s0, ascii_Y
+    CALL send_to_uart
+    LOAD s0, ascii_e
+    CALL send_to_uart
+    LOAD s0, ascii_s
+    CALL send_to_uart
+    LOAD s0, ascii_CR   ; carriage return = end of line
+    CALL send_to_uart
+    LOAD s0, ascii_LF   ; line feed = new line
+    CALL send_to_uart
+
+    LOAD s0, ascii_LBKT ; "[2] No"
+	CALL send_to_uart
+	LOAD s0, ascii_2
+	CALL send_to_uart
+	LOAD s0, ascii_RBKT
+	CALL send_to_uart
+    LOAD s0, ascii_SPACE
+    CALL send_to_uart
+    LOAD s0, ascii_N
+    CALL send_to_uart
+    LOAD s0, ascii_o
+    CALL send_to_uart
+    LOAD s0, ascii_CR   ; carriage return = end of line
+    CALL send_to_uart
+    LOAD s0, ascii_LF   ; line feed = new line
+    CALL send_to_uart
+    RETURN
+
+confirm_overwrite:
+    LOAD s0, ascii_W    ; "Would you like to overwrite this recording?"
+    CALL send_to_uart
+    LOAD s0, ascii_o
+    CALL send_to_uart
+    LOAD s0, ascii_u
+    CALL send_to_uart
+    LOAD s0, ascii_l
+    CALL send_to_uart
+    LOAD s0, ascii_d
+    CALL send_to_uart
+    LOAD s0, ascii_SPACE
+    CALL send_to_uart
+    LOAD s0, ascii_y
+    CALL send_to_uart
+    LOAD s0, ascii_o
+    CALL send_to_uart
+    LOAD s0, ascii_u
+    CALL send_to_uart
+    LOAD s0, ascii_SPACE
+    CALL send_to_uart
+    LOAD s0, ascii_l
+    CALL send_to_uart
+    LOAD s0, ascii_i
+    CALL send_to_uart
+    LOAD s0, ascii_k
+    CALL send_to_uart
+    LOAD s0, ascii_e
+    CALL send_to_uart
+    LOAD s0, ascii_SPACE
+    CALL send_to_uart
+    LOAD s0, ascii_t
+    CALL send_to_uart
+    LOAD s0, ascii_o
+    CALL send_to_uart
+    LOAD s0, ascii_SPACE
+    CALL send_to_uart
+    LOAD s0, ascii_o
+    CALL send_to_uart
+    LOAD s0, ascii_v
+    CALL send_to_uart
+    LOAD s0, ascii_e
+    CALL send_to_uart
+    LOAD s0, ascii_r
+    CALL send_to_uart
+    LOAD s0, ascii_w
+    CALL send_to_uart
+    LOAD s0, ascii_r
+    CALL send_to_uart
+    LOAD s0, ascii_i
+    CALL send_to_uart
+    LOAD s0, ascii_t
+    CALL send_to_uart
+    LOAD s0, ascii_e
+    CALL send_to_uart
+    LOAD s0, ascii_SPACE
+    CALL send_to_uart
+    LOAD s0, ascii_t
+    CALL send_to_uart
+    LOAD s0, ascii_h
+    CALL send_to_uart
+    LOAD s0, ascii_i
+    CALL send_to_uart
+    LOAD s0, ascii_s
+    CALL send_to_uart
+    LOAD s0, ascii_SPACE
+    CALL send_to_uart
+    LOAD s0, ascii_r
+    CALL send_to_uart
+    LOAD s0, ascii_e
+    CALL send_to_uart
+    LOAD s0, ascii_c
+    CALL send_to_uart
+    LOAD s0, ascii_o
+    CALL send_to_uart
+    LOAD s0, ascii_r
+    CALL send_to_uart
+    LOAD s0, ascii_d
+    CALL send_to_uart
+    LOAD s0, ascii_i
+    CALL send_to_uart
+    LOAD s0, ascii_n
+    CALL send_to_uart
+    LOAD s0, ascii_g
+    CALL send_to_uart
+    LOAD s0, ascii_QUESTION
+    CALL send_to_uart
+    LOAD s0, ascii_CR   ; carriage return = end of line
+    CALL send_to_uart
+    LOAD s0, ascii_LF   ; line feed = new line
+    CALL send_to_uart
+
+    LOAD s0, ascii_LBKT ; "[1] Yes"
+    CALL send_to_uart
+    LOAD s0, ascii_1
+    CALL send_to_uart
+    LOAD s0, ascii_RBKT
+    CALL send_to_uart
+    LOAD s0, ascii_SPACE
+    CALL send_to_uart
+    LOAD s0, ascii_Y
+    CALL send_to_uart
+    LOAD s0, ascii_e
+    CALL send_to_uart
+    LOAD s0, ascii_s
+    CALL send_to_uart
+    LOAD s0, ascii_CR   ; carriage return = end of line
+    CALL send_to_uart
+    LOAD s0, ascii_LF   ; line feed = new line
+    CALL send_to_uart
+
+    LOAD s0, ascii_LBKT ; "[2] No"
+	CALL send_to_uart
+	LOAD s0, ascii_2
+	CALL send_to_uart
+	LOAD s0, ascii_RBKT
+	CALL send_to_uart
+    LOAD s0, ascii_SPACE
+    CALL send_to_uart
+    LOAD s0, ascii_N
+    CALL send_to_uart
+    LOAD s0, ascii_o
+    CALL send_to_uart
+    LOAD s0, ascii_CR   ; carriage return = end of line
+    CALL send_to_uart
+    LOAD s0, ascii_LF   ; line feed = new line
+    CALL send_to_uart
+    RETURN
+
+delete_successful:
+    LOAD s0, ascii_D ; "Delete successful."
+    CALL send_to_uart
+    LOAD s0, ascii_e
+    CALL send_to_uart
+    LOAD s0, ascii_l
+    CALL send_to_uart
+    LOAD s0, ascii_e
+    CALL send_to_uart
+    LOAD s0, ascii_t
+    CALL send_to_uart
+    LOAD s0, ascii_e
+    CALL send_to_uart
+    LOAD s0, ascii_SPACE
+    CALL send_to_uart
+    LOAD s0, ascii_s
+    CALL send_to_uart
+    LOAD s0, ascii_u
+    CALL send_to_uart
+    LOAD s0, ascii_c
+    CALL send_to_uart
+    LOAD s0, ascii_c
+    CALL send_to_uart
+    LOAD s0, ascii_e
+    CALL send_to_uart
+    LOAD s0, ascii_s
+    CALL send_to_uart
+    LOAD s0, ascii_s
+    CALL send_to_uart
+    LOAD s0, ascii_f
+    CALL send_to_uart
+    LOAD s0, ascii_u
+    CALL send_to_uart
+    LOAD s0, ascii_l
+    CALL send_to_uart
+    LOAD s0, ascii_PERIOD
+    CALL send_to_uart
+    LOAD s0, ascii_CR   ; carriage return = end of line
+    CALL send_to_uart
+    LOAD s0, ascii_LF   ; line feed = new line
+    CALL send_to_uart
+    RETURN
+
+overwrite_confirmed:
+    LOAD s0, ascii_O ; "Overwrite confirmed."
+    CALL send_to_uart
+    LOAD s0, ascii_v
+    CALL send_to_uart
+    LOAD s0, ascii_e
+    CALL send_to_uart
+    LOAD s0, ascii_r
+    CALL send_to_uart
+    LOAD s0, ascii_w
+    CALL send_to_uart
+    LOAD s0, ascii_r
+    CALL send_to_uart
+    LOAD s0, ascii_i
+    CALL send_to_uart
+    LOAD s0, ascii_t
+    CALL send_to_uart
+    LOAD s0, ascii_e
+    CALL send_to_uart
+    LOAD s0, ascii_SPACE
+    CALL send_to_uart
+    LOAD s0, ascii_c
+    CALL send_to_uart
+    LOAD s0, ascii_o
+    CALL send_to_uart
+    LOAD s0, ascii_n
+    CALL send_to_uart
+    LOAD s0, ascii_f
+    CALL send_to_uart
+    LOAD s0, ascii_i
+    CALL send_to_uart
+    LOAD s0, ascii_r
+    CALL send_to_uart
+    LOAD s0, ascii_m
+    CALL send_to_uart
+    LOAD s0, ascii_e
+    CALL send_to_uart
+    LOAD s0, ascii_d
+    CALL send_to_uart
+    LOAD s0, ascii_PERIOD
+    CALL send_to_uart
+    LOAD s0, ascii_CR   ; carriage return = end of line
+    CALL send_to_uart
+    LOAD s0, ascii_LF   ; line feed = new line
+    CALL send_to_uart
+    RETURN
+    
+recording:
+    LOAD s0, ascii_R ; "Recording..."
+    CALL send_to_uart
+    LOAD s0, ascii_e
+    CALL send_to_uart
+    LOAD s0, ascii_c
+    CALL send_to_uart
+    LOAD s0, ascii_o
+    CALL send_to_uart
+    LOAD s0, ascii_r
+    CALL send_to_uart
+    LOAD s0, ascii_d
+    CALL send_to_uart
+    LOAD s0, ascii_i
+    CALL send_to_uart
+    LOAD s0, ascii_n
+    CALL send_to_uart
+    LOAD s0, ascii_g
+    CALL send_to_uart
+    LOAD s0, ascii_PERIOD
+    CALL send_to_uart
+    LOAD s0, ascii_PERIOD
+    CALL send_to_uart
+    LOAD s0, ascii_PERIOD
+    CALL send_to_uart
+    LOAD s0, ascii_CR   ; carriage return = end of line
+    CALL send_to_uart
+    LOAD s0, ascii_LF   ; line feed = new line
+    CALL send_to_uart
+    RETURN
+
+playing:
+    LOAD s0, ascii_P ; "Playing..."
+    CALL send_to_uart
+    LOAD s0, ascii_l
+    CALL send_to_uart
+    LOAD s0, ascii_a
+    CALL send_to_uart
+    LOAD s0, ascii_y
+    CALL send_to_uart
+    LOAD s0, ascii_i
+    CALL send_to_uart
+    LOAD s0, ascii_n
+    CALL send_to_uart
+    LOAD s0, ascii_g
+    CALL send_to_uart
+    LOAD s0, ascii_PERIOD
+    CALL send_to_uart
+    LOAD s0, ascii_PERIOD
+    CALL send_to_uart
+    LOAD s0, ascii_PERIOD
+    CALL send_to_uart
+    LOAD s0, ascii_CR   ; carriage return = end of line
+    CALL send_to_uart
+    LOAD s0, ascii_LF   ; line feed = new line
+    CALL send_to_uart
+    RETURN
+
+paused:
+    LOAD s0, ascii_P ; "Paused."
+    CALL send_to_uart
+    LOAD s0, ascii_a
+    CALL send_to_uart
+    LOAD s0, ascii_u
+    CALL send_to_uart
+    LOAD s0, ascii_s
+    CALL send_to_uart
+    LOAD s0, ascii_e
+    CALL send_to_uart
+    LOAD s0, ascii_d
+    CALL send_to_uart
+    LOAD s0, ascii_PERIOD
+    CALL send_to_uart
+    LOAD s0, ascii_CR   ; carriage return = end of line
+    CALL send_to_uart
+    LOAD s0, ascii_LF   ; line feed = new line
+    CALL send_to_uart
+    RETURN
